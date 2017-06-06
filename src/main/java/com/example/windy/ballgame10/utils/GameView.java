@@ -4,9 +4,13 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.util.DisplayMetrics;
+import android.view.Display;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Toast;
 
+import com.example.windy.ballgame10.MainActivity;
 import com.example.windy.ballgame10.shapes.Ball;
 import com.example.windy.ballgame10.shapes.Racket;
 
@@ -23,7 +27,9 @@ public class GameView extends View {
     private Racket racketTop;
     private boolean isLose = false; //游戏结束标志
 
-    private GameHandler gameHandler =  new GameHandler();
+    private int round = 1;
+
+    private GameHandler gameHandler = new GameHandler();
     private Paint paint = new Paint();
 
     public GameView(Context context, Ball[] balls, Racket racketDown, Racket racketTop) {
@@ -41,10 +47,14 @@ public class GameView extends View {
         // 如果游戏已经结束
         if (gameHandler.isGameOver(balls)) {
 
-                paint.setColor(Color.BLUE);
-                paint.setTextSize(60);
-                canvas.drawText("Game over", 200, 500, paint);
-           // Toast.makeText(getApplicationContext(), "3s 后开始第" + cntGame + "局", Toast.LENGTH_SHORT).show();
+            paint.setColor(Color.BLUE);
+            paint.setTextSize(50);
+
+            String text = "Double tap to Round" + round;
+            float textLength = paint.measureText(text);
+
+            canvas.drawText(text, (MainActivity.windowWidth- textLength) / 2, 500, paint);
+            // Toast.makeText(getApplicationContext(), "3s 后开始第" + cntGame + "局", Toast.LENGTH_SHORT).show();
 
             //延时操作
         /*    Timer timer = new Timer();
@@ -57,7 +67,7 @@ public class GameView extends View {
         }
         // 如果游戏还未结束
         else {
-            for (int i = 0; i < balls.length; i++){
+            for (int i = 0; i < balls.length; i++) {
                 gameHandler.drawBall(balls[i], canvas, paint);
             }
 
@@ -73,12 +83,16 @@ public class GameView extends View {
         }
     }
 
-    public void handlerBalls(int tableWidth){
+    public void handlerBalls(int tableWidth) {
         for (int i = 0; i != balls.length; i++)
-           gameHandler.handleBall(balls[i], racketDown, racketTop, tableWidth);
+            gameHandler.handleBall(balls[i], racketDown, racketTop, tableWidth);
     }
 
-    public boolean isGameOver(){
+    public void intoNextRound() {
+        round++;
+    }
+
+    public boolean isGameOver() {
         return gameHandler.isGameOver(balls);
     }
 }

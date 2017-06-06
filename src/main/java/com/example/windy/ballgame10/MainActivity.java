@@ -1,9 +1,4 @@
 /**
- *  A Ball Game based on Android canvas
- *  Created by windy - MAY 23, 2017
- */
-
-/**
  * Anti-BUG log
  * isLose无法判定是否该游戏结束
  * 随机生成在边缘的球体无法正常反弹 GET_OVER
@@ -16,21 +11,16 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import android.app.Activity;
-import android.content.Context;
-import android.content.Intent;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.Toast;
 
 import com.example.windy.ballgame10.shapes.Ball;
 import com.example.windy.ballgame10.shapes.Racket;
@@ -56,6 +46,8 @@ public class MainActivity extends Activity {
     private final int RACKET_HEIGHT = 30;
     private final int RACKET_WIDTH = 130;
 
+    public static float windowWidth;
+
     //赛制局数, 默认五局三胜
     /**
      * rule == 5 五局三胜 || rule == 7 七局五胜
@@ -72,13 +64,18 @@ public class MainActivity extends Activity {
 
     /**
      * difficulty == 2 简单
-     *            == 1.2 一般
+     *            == 1.15 一般
      *            == 1 困难 默认困难模式无法击败
      */
     private float difficulty = 1.15f;
 
     //当局游戏是否结束标志
     private boolean isGameOver = false;
+
+    //帧管理器
+    private Timer timer;
+
+    private int tapCount = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,30 +90,11 @@ public class MainActivity extends Activity {
         display.getMetrics(metrics);
 
         // 获得屏幕宽和高
-        tableWidth = metrics.widthPixels;
+        windowWidth=tableWidth = metrics.widthPixels;
         tableHeight = metrics.heightPixels;
 
         //生成球，设置初始位置，大小及速度
-        Random rand = new Random();
-        balls[0] = new Ball(tableWidth / 2 - 50, tableHeight / 2 - 40, RADIUS);
-        balls[0].setxSpeed(25);
-        balls[0].setySpeed(20);
-
-        balls[1] = new Ball(tableWidth / 2 - 50, tableHeight / 2 + 40, RADIUS);
-        balls[1].setxSpeed(-30);
-        balls[1].setySpeed(20);
-
-        balls[2] = new Ball(tableWidth / 2 + 50, tableHeight / 2 - 40, RADIUS);
-        balls[2].setxSpeed(15);
-        balls[2].setySpeed(-20);
-
-        balls[3] = new Ball(tableWidth / 2 + 50, tableHeight / 2 + 40, RADIUS);
-        balls[3].setxSpeed(-20);
-        balls[3].setySpeed(-25);
-
-        balls[4] = new Ball(tableWidth / 2, tableHeight / 2, RADIUS);
-        balls[4].setxSpeed(30);
-        balls[4].setySpeed(30);
+        initBalls();
 
         //生成球拍，设置大小及位置
         racketDown = new Racket(tableWidth / 2, tableHeight - 80, RACKET_WIDTH, RACKET_HEIGHT);
@@ -137,61 +115,90 @@ public class MainActivity extends Activity {
         };
 
 
+        timer = new Timer();
 
-        final Timer timer = new Timer();
 
-        if (!isGameOver) {
-            //球拍控制事件
-            gameView.setOnTouchListener(new View.OnTouchListener() {
-                Float mXPos = 0f;
-                Float curXPos = 0f;
-                Float minDis = 15f;
+        //球拍控制事件
+        gameView.setOnTouchListener(new View.OnTouchListener() {
+            Float mXPos = 0f;
+            Float curXPos = 0f;
+            Float minDis = 15f;
 
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    switch (event.getAction()){
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (gameView.isGameOver() && event.getAction()==MotionEvent.ACTION_UP) {
+                    tapCount++;
+                    if (tapCount==2) {
+                        initBalls();
+                        gameView.intoNextRound();
+                        tapCount=0;
+                    }
+                } else {
+                    switch (event.getAction()) {
                         case MotionEvent.ACTION_DOWN:
                             mXPos = event.getX();
                         case MotionEvent.ACTION_MOVE:
                             curXPos = event.getX();
-                        case MotionEvent.ACTION_UP:{
-                            if (Math.abs(curXPos - mXPos) >= minDis){
-                                if (curXPos > mXPos){
+                        case MotionEvent.ACTION_UP: {
+                            if (Math.abs(curXPos - mXPos) >= minDis) {
+                                if (curXPos > mXPos) {
                                     racketDown.moveRight(10, tableWidth);
-                                }
-                                else{
+                                } else {
                                     racketDown.moveLeft(10);
                                 }
                             }
                         }
                     }
-
-                    gameView.invalidate();
-                    return true;
                 }
-            });
+                gameView.invalidate();
+                return true;
+            }
+        });
 
-            timer.schedule(new TimerTask() // ①
-            {
-                @Override
-                public void run() {
-                    //Ball数组代替
-                    gameView.handlerBalls(tableWidth);
 
-                    if (isGameOver) {
-                        timer.cancel();
-                    }
-                    else {
-                        // 发送消息，通知系统重绘组件
-                        handler.sendEmptyMessage(0x233);
-                    }
-                }
-            }, 0, 100);
-        }
+        //计时器一般情况下不应该停下来，它是一直运行着的，除非退出游戏
+        timer.schedule(new TimerTask() // ①
+        {
+            @Override
+            public void run() {
+                //Ball数组代替
+                gameView.handlerBalls(tableWidth);
+
+
+                // 发送消息，通知系统重绘组件
+                handler.sendEmptyMessage(0x233);
+
+            }
+        }, 0, 50);
+    }
+
+
+    private void initBalls() {
+        Random rand = new Random();
+        balls[0] = new Ball(tableWidth / 2 - 50, tableHeight / 2 - 40, RADIUS);
+        balls[0].setxSpeed(25);
+        balls[0].setySpeed(20);
+
+        balls[1] = new Ball(tableWidth / 2 - 50, tableHeight / 2 + 40, RADIUS);
+        balls[1].setxSpeed(-30);
+        balls[1].setySpeed(20);
+
+        balls[2] = new Ball(tableWidth / 2 + 50, tableHeight / 2 - 40, RADIUS);
+        balls[2].setxSpeed(15);
+        balls[2].setySpeed(-20);
+
+        balls[3] = new Ball(tableWidth / 2 + 50, tableHeight / 2 + 40, RADIUS);
+        balls[3].setxSpeed(-20);
+        balls[3].setySpeed(-25);
+
+        balls[4] = new Ball(tableWidth / 2, tableHeight / 2, RADIUS);
+        balls[4].setxSpeed(30);
+        balls[4].setySpeed(30);
     }
 
     @Override
     public void onBackPressed() {
+        timer.cancel();
         finish();
     }
 }
