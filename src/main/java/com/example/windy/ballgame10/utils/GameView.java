@@ -25,6 +25,7 @@ public class GameView extends View {
     private Ball[] balls;
     private Racket racketDown;
     private Racket racketTop;
+
     private boolean isLose = false; //游戏结束标志
 
     private int round = 1;
@@ -37,6 +38,14 @@ public class GameView extends View {
         this.balls = balls;
         this.racketDown = racketDown;
         this.racketTop = racketTop;
+    }
+
+    public void setRule(int rule){
+        gameHandler.setRule(rule);
+    }
+
+    public void setDifficulty(float difficulty){
+        gameHandler.setDifficulty(difficulty);
     }
 
     // 重写View的onDraw方法，实现绘画

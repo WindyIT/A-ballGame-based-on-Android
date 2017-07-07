@@ -88,23 +88,32 @@ public class GameHandler {
     public float AI_racketXPos(Ball[] ball, Racket racketTop){
         int ballId = 0;
         float smallestYPos = ball[0].getyPos();
-        Random rand = new Random();
+
         for (int i = 1; i < ball.length; i++){
             if (ball[i].getyPos() < smallestYPos){
                 ballId = i;
                 smallestYPos = ball[i].getyPos();
             }
         }
+
+        Random rand = new Random();
         //采用随机接收决定上板是否接球
-        int randOffset = rand.nextInt(1024);
+        float randOffset = rand.nextInt(1024);
 
         //不接球
-        if (randOffset >= 1024 / difficulty)
+        if (randOffset >= (1024 / difficulty))
             return racketTop.getxPos();
 
-        return ball[ballId].getxPos() - racketTop.getWidth()/ 2;
+        return ball[ballId].getxPos() - racketTop.getWidth() / 2;
     }
 
     // 球全部出局后，记录输赢，局数加一
 
+    void setRule(int rule){
+        this.rule = rule;
+    }
+
+    void setDifficulty(float difficulty){
+        this.difficulty = difficulty;
+    }
 }

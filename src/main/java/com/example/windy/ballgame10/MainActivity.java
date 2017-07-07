@@ -11,6 +11,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -21,6 +22,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Toast;
 
 import com.example.windy.ballgame10.shapes.Ball;
 import com.example.windy.ballgame10.shapes.Racket;
@@ -46,28 +48,12 @@ public class MainActivity extends Activity {
     private final int RACKET_HEIGHT = 30;
     private final int RACKET_WIDTH = 130;
 
+    //赛制及难度
+    private int rule;
+    private float diff;
+
     public static float windowWidth;
 
-    //赛制局数, 默认五局三胜
-    /**
-     * rule == 5 五局三胜 || rule == 7 七局五胜
-     * cntWin == 3 win
-     * cntLose == 3 lose
-     * cntGame用于显示正在进行第几局
-     * */
-    /*private int rule = 5;
-    private int cntLose = 0;
-    private int cntWin = 0;
-    private int cntGame = 1;
-    private int loseBallTop = 0;
-    private int loseBallDown = 0;*/
-
-    /**
-     * difficulty == 2 简单
-     *            == 1.15 一般
-     *            == 1 困难 默认困难模式无法击败
-     */
-    private float difficulty = 1.15f;
 
     //当局游戏是否结束标志
     private boolean isGameOver = false;
@@ -100,9 +86,21 @@ public class MainActivity extends Activity {
         racketDown = new Racket(tableWidth / 2, tableHeight - 80, RACKET_WIDTH, RACKET_HEIGHT);
         racketTop = new Racket(tableWidth / 2, 0, RACKET_WIDTH, RACKET_HEIGHT);
 
+        //获取赛制和难度
+        Intent intent = new Intent();
+        rule = intent.getIntExtra("Rule", 5);
+        diff = intent.getFloatExtra("Diff", 1.5f);
+
         //生成游戏界面
         final GameView gameView = new GameView(this, balls, racketDown, racketTop);
+        //设置赛制和难度
+        gameView.setRule(rule);
+        gameView.setDifficulty(diff);
         setContentView(gameView);
+
+//        //Test
+//        Toast.makeText(getApplicationContext(), rule, Toast.LENGTH_SHORT).show();
+//        Toast.makeText(getApplicationContext(), (int)diff, Toast.LENGTH_SHORT).show();
 
         //Handler + Looper 重绘机制
         final Handler handler = new Handler() {
@@ -140,11 +138,18 @@ public class MainActivity extends Activity {
                         case MotionEvent.ACTION_MOVE:
                             curXPos = event.getX();
                         case MotionEvent.ACTION_UP: {
-                            if (Math.abs(curXPos - mXPos) >= minDis) {
+                            if (2 * minDis > Math.abs(curXPos - mXPos) && Math.abs(curXPos - mXPos) >= minDis) {
                                 if (curXPos > mXPos) {
                                     racketDown.moveRight(10, tableWidth);
                                 } else {
                                     racketDown.moveLeft(10);
+                                }
+                            }
+                            else if (Math.abs(curXPos - mXPos) > 2 * minDis){
+                                if (curXPos > mXPos) {
+                                    racketDown.moveRight(25, tableWidth);
+                                } else {
+                                    racketDown.moveLeft(25);
                                 }
                             }
                         }
